@@ -5,9 +5,10 @@ from colorama import Fore, Back, Style
 import requests, random
 
 total_scrapped = 0
-proxy_limit = 10000
+proxy_limit = 100000
 remove_duplicates = True
 shuffle_output = False
+clear_previous_results = True
 
 proxy_sources = {
     "http": [
@@ -52,6 +53,12 @@ proxy_sources = {
 }
 
 def scrape(type):
+    if clear_previous_results:
+        with open(f'output-{type}.txt', 'a') as file:
+            file.truncate(0)
+            print(Fore.LIGHTRED_EX + f"Cleared previous results on {type} text file!")
+            sleep(1)
+    
     with open(f'output-{type}.txt', 'a') as file:
         collected_proxies = []
         idx = 1
@@ -79,12 +86,12 @@ def scrape(type):
         for key, value in enumerate(collected_proxies):
             file.write(value.decode() + "\n")
 
+        file.flush()  # Flush the file buffer to ensure immediate write (thanks chatgpt)
         global total_scrapped
         total_scrapped += idx
         print(f"Scraped {idx} {type} proxies!\nSaved to file!")
         sleep(2)
-        main()
-    return
+        return main()
 
 def display_info():
     print(Fore.YELLOW + "███████████████████████████████████████████")
@@ -116,53 +123,69 @@ def display_settings():
     system("cls")
     display_info()
 
-    print(Fore.LIGHTRED_EX + "[1] " + Fore.WHITE + "Remove duplicates: " + str(remove_duplicates))
-    print(Fore.LIGHTRED_EX + "[2] " + Fore.WHITE + "Shuffle output: " + str(shuffle_output))
-    print(Fore.LIGHTRED_EX + "[3] " + Fore.WHITE + "Limit: " + str(proxy_limit))
-    print(Fore.LIGHTRED_EX + "[4] " + Fore.WHITE + "Back")
+    print(Fore.LIGHTRED_EX + "[1] " + Fore.WHITE + "Remove duplicate ips: " + str(remove_duplicates))
+    print(Fore.LIGHTRED_EX + "[2] " + Fore.WHITE + "Shuffle list output: " + str(shuffle_output))
+    print(Fore.LIGHTRED_EX + "[3] " + Fore.WHITE + "Clear previous results from files: " + str(clear_previous_results))
+    print(Fore.LIGHTRED_EX + "[4] " + Fore.WHITE + "Limit proxies: " + str(proxy_limit))
+    print(Fore.LIGHTRED_EX + "[5] " + Fore.WHITE + "Back")
 
     return
 
-def main(skip=NULL):
-    display_options()
+def main(skip=None):
+    try:
+        display_options()
 
-    option = skip or int(input())
-    if option == 1:
-        scrape('http')
-    elif option == 2:
-        scrape('socks4')
-    elif option == 3:
-        scrape('socks5')
-    elif option == 4:
-        display_settings()
-
-        setting_option = int(input())
-        if setting_option == 1:
-            global remove_duplicates
-            remove_duplicates = not remove_duplicates
-            main(4)
-        elif setting_option == 2:
-            global shuffle_output
-            shuffle_output = not shuffle_output
-            main(4)
-        elif setting_option == 3:
-            try:
-                print(Fore.LIGHTRED_EX + "Please enter amount for proxy limit (int):")
-                setting = int(input())
-                global proxy_limit
-                proxy_limit = setting
-                main(4)
-            except:
-                main(4)
+        option = skip or int(input())
+        if option == 1:
+            return scrape('http')
+        elif option == 2:
+            return scrape('socks4')
+        elif option == 3:
+            return scrape('socks5')
+        elif option == 4:
+            handle_settings()
+            return main(4)
+        elif option == 5:
+            return exit()
         else:
-            main()
+            return main()
+    except ValueError:
+        return main()
 
-    elif option == 5:
-        exit()
+def handle_settings():
+    display_settings()
+    setting_option = int(input())
+    if setting_option == 1:
+        toggle_remove_duplicates()
+    elif setting_option == 2:
+        toggle_shuffle_output()
+    elif setting_option == 3:
+        toggle_clear_previous_results()
+    elif setting_option == 4:
+        update_proxy_limit()
     else:
         main()
-    
-    return
+
+def toggle_remove_duplicates():
+    global remove_duplicates
+    remove_duplicates = not remove_duplicates
+
+def toggle_shuffle_output():
+    global shuffle_output
+    shuffle_output = not shuffle_output
+
+def toggle_clear_previous_results():
+    global clear_previous_results
+    clear_previous_results = not clear_previous_results
+
+def update_proxy_limit():
+    try:
+        print(Fore.LIGHTRED_EX + "Please enter the amount for proxy limit (int):")
+        setting = int(input())
+        global proxy_limit
+        proxy_limit = setting
+    except ValueError:
+        main(4)
 
 if __name__ == "__main__":
     main()

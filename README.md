@@ -5,9 +5,11 @@ There might be better versions out there, but this is my try at it. Use it if yo
 
 ![image](scraper.png)
 
-scrape result, no duplicates(10/06/2023):
+### scrape result, no duplicates(10/06/2023):
 http: 67446
+
 socks4: 38170
+
 socks5: 43963
 
 ###### moved from https://github.com/nertigel/py/blob/main/proxy_scrapper.py

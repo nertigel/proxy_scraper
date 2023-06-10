@@ -20,7 +20,12 @@ proxy_sources = {
         "https://raw.githubusercontent.com/HyperBeats/proxy-list/main/http.txt",
         "https://raw.githubusercontent.com/ShiftyTR/Proxy-List/master/http.txt",
         "https://raw.githubusercontent.com/roosterkid/openproxylist/main/HTTPS_RAW.txt",
-        "https://raw.githubusercontent.com/monosans/proxy-list/main/proxies_anonymous/http.txt",
+        "https://raw.githubusercontent.com/mmpx12/proxy-list/master/http.txt",
+        "https://raw.githubusercontent.com/monosans/proxy-list/main/proxies/http.txt",
+        "https://raw.githubusercontent.com/UptimerBot/proxy-list/main/proxies/http.txt",
+        "https://raw.githubusercontent.com/ALIILAPRO/Proxy/main/http.txt",
+        "https://raw.githubusercontent.com/yemixzy/proxy-list/main/proxies/http.txt",
+        "https://raw.githubusercontent.com/sunny9577/proxy-scraper/master/generated/http_proxies.txt",
         "https://api.proxyscrape.com/?request=displayproxies&proxytype=http&country=all",
         "https://api.openproxylist.xyz/http.txt",
     ],
@@ -33,7 +38,11 @@ proxy_sources = {
         "https://raw.githubusercontent.com/HyperBeats/proxy-list/main/socks4.txt",
         "https://raw.githubusercontent.com/ShiftyTR/Proxy-List/master/socks4.txt",
         "https://raw.githubusercontent.com/roosterkid/openproxylist/main/SOCKS4_RAW.txt",
-        "https://raw.githubusercontent.com/monosans/proxy-list/main/proxies_anonymous/socks4.txt",
+        "https://raw.githubusercontent.com/mmpx12/proxy-list/master/socks4.txt",
+        "https://raw.githubusercontent.com/monosans/proxy-list/main/proxies/socks4.txt",
+        "https://raw.githubusercontent.com/UptimerBot/proxy-list/main/proxies/socks4.txt",
+        "https://raw.githubusercontent.com/ALIILAPRO/Proxy/main/socks4.txt",
+        "https://raw.githubusercontent.com/sunny9577/proxy-scraper/master/generated/socks4_proxies.txt",
         "https://api.proxyscrape.com/?request=displayproxies&proxytype=socks4&country=all",
         "https://api.openproxylist.xyz/socks4.txt",
     ],
@@ -46,7 +55,12 @@ proxy_sources = {
         "https://raw.githubusercontent.com/HyperBeats/proxy-list/main/socks5.txt",
         "https://raw.githubusercontent.com/ShiftyTR/Proxy-List/master/socks5.txt",
         "https://raw.githubusercontent.com/roosterkid/openproxylist/main/SOCKS5_RAW.txt",
-        "https://raw.githubusercontent.com/monosans/proxy-list/main/proxies_anonymous/socks5.txt",
+        "https://raw.githubusercontent.com/mmpx12/proxy-list/master/socks5.txt",
+        "https://raw.githubusercontent.com/monosans/proxy-list/main/proxies/socks5.txt",
+        "https://raw.githubusercontent.com/UptimerBot/proxy-list/main/proxies/socks5.txt",
+        "https://raw.githubusercontent.com/hookzof/socks5_list/master/proxy.txt",
+        "https://raw.githubusercontent.com/ALIILAPRO/Proxy/main/socks5.txt",
+        "https://raw.githubusercontent.com/sunny9577/proxy-scraper/master/generated/socks5_proxies.txt",
         "https://api.proxyscrape.com/?request=displayproxies&proxytype=socks5&country=all",
         "https://api.openproxylist.xyz/socks5.txt",
     ]
@@ -62,10 +76,11 @@ def scrape(type):
     with open(f'output-{type}.txt', 'a') as file:
         collected_proxies = []
         idx = 1
+        total_sources = len(proxy_sources[type])
         for key, url in enumerate(proxy_sources[type]):
             if idx >= proxy_limit:
                 break
-            print(Fore.LIGHTGREEN_EX + f"Scraping from {url}")
+            print(Fore.LIGHTGREEN_EX + f"Scraping from target ({key+1}/{total_sources})")
             sleep(1)
             response = requests.get(url)
             for key, value in enumerate(response.iter_lines()):
@@ -86,10 +101,10 @@ def scrape(type):
         for key, value in enumerate(collected_proxies):
             file.write(value.decode() + "\n")
 
-        file.flush()  # Flush the file buffer to ensure immediate write (thanks chatgpt)
+        file.flush() # Flush the file buffer to ensure immediate write (thanks chatgpt)
         global total_scrapped
         total_scrapped += idx
-        print(f"Scraped {idx} {type} proxies!\nSaved to file!")
+        print(f"Scraped {idx} {type} proxies! \nSaved to output-{type}.txt!")
         sleep(2)
         return main()
 

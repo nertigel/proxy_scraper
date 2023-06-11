@@ -76,11 +76,11 @@ proxy_sources = {
 
 def log_print(garbage_but_ok):
     if enable_logging:
-        print(garbage_but_ok)
         with open(f"logs-{time.strftime('%d-%m-%y')}.txt", "a") as file:
             to_write = re.sub(r'\033\[(\d|;)+?m', '', garbage_but_ok)
             file.write(f"[{time.strftime('%d/%m/%y %H:%M')}] " + to_write + "\n")
             file.flush()
+    return print(garbage_but_ok)
 
 def scrape(type):
     system("cls")

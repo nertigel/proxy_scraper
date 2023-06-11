@@ -33,8 +33,10 @@ proxy_sources = {
         "https://raw.githubusercontent.com/sunny9577/proxy-scraper/master/generated/http_proxies.txt",
         "https://raw.githubusercontent.com/mertguvencli/http-proxy-list/main/proxy-list/data.txt",
         "https://raw.githubusercontent.com/zevtyardt/proxy-list/main/http.txt",
+        "https://raw.githubusercontent.com/ErcinDedeoglu/proxies/main/proxies/http.txt",
         "https://api.proxyscrape.com/?request=displayproxies&proxytype=http&country=all",
         "https://api.openproxylist.xyz/http.txt",
+        "https://www.proxyscan.io/download?type=http",
     ],
     "socks4": [
         "https://raw.githubusercontent.com/TheSpeedX/PROXY-List/master/socks4.txt",
@@ -50,8 +52,10 @@ proxy_sources = {
         "https://raw.githubusercontent.com/ALIILAPRO/Proxy/main/socks4.txt",
         "https://raw.githubusercontent.com/sunny9577/proxy-scraper/master/generated/socks4_proxies.txt",
         "https://raw.githubusercontent.com/zevtyardt/proxy-list/main/socks4.txt",
+        "https://raw.githubusercontent.com/ErcinDedeoglu/proxies/main/proxies/socks4.txt",
         "https://api.proxyscrape.com/?request=displayproxies&proxytype=socks4&country=all",
         "https://api.openproxylist.xyz/socks4.txt",
+        "https://www.proxyscan.io/download?type=socks4",
     ],
     "socks5": [
         "https://raw.githubusercontent.com/TheSpeedX/PROXY-List/master/socks5.txt",
@@ -69,8 +73,10 @@ proxy_sources = {
         "https://raw.githubusercontent.com/sunny9577/proxy-scraper/master/generated/socks5_proxies.txt",
         "https://raw.githubusercontent.com/hookzof/socks5_list/master/proxy.txt",
         "https://raw.githubusercontent.com/zevtyardt/proxy-list/main/socks5.txt",
+        "https://raw.githubusercontent.com/ErcinDedeoglu/proxies/main/proxies/socks5.txt",
         "https://api.proxyscrape.com/?request=displayproxies&proxytype=socks5&country=all",
         "https://api.openproxylist.xyz/socks5.txt",
+        "https://www.proxyscan.io/download?type=socks5",
     ]
 }
 
@@ -80,6 +86,7 @@ def log_print(garbage_but_ok):
             to_write = re.sub(r'\033\[(\d|;)+?m', '', garbage_but_ok)
             file.write(f"[{time.strftime('%d/%m/%y %H:%M')}] " + to_write + "\n")
             file.flush()
+    
     return print(garbage_but_ok)
 
 def scrape(type):
@@ -90,7 +97,7 @@ def scrape(type):
             log_print(Fore.LIGHTRED_EX + "[!] " + Fore.WHITE + f"output-{type}.txt has been cleared!")
             time.sleep(1)
     
-    log_print(Fore.LIGHTRED_EX + "[!] " + Fore.WHITE + f"Started scrape for {type} proxy:")
+    log_print(Fore.LIGHTRED_EX + "[!] " + Fore.WHITE + f"Started scrape for {type} proxies:")
     with open(f'output-{type}.txt', 'a') as file:
         collected_proxies = []
         idx = 1

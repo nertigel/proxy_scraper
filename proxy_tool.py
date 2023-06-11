@@ -1,13 +1,12 @@
-from asyncio.windows_events import NULL
-from gc import collect
-from os import dup, system
+from os import system
 from colorama import Fore, Back, Style
-import time, requests, random, math
+import time, requests, random, math, re
 
-system("title Proxy Scraper & Checker [HTTP/SOCKS4/SOCKS5] - github.com/nertigel/proxy_scraper")
+system("title Proxy Scraper and Checker [HTTP/SOCKS4/SOCKS5] - github.com/nertigel/proxy_tool")
 
 total_scrapped = 0
 total_duplicates = 0
+enable_logging = False
 # scraper shit
 proxy_limit = 100000
 remove_duplicates = True
@@ -75,15 +74,23 @@ proxy_sources = {
     ]
 }
 
+def log_print(garbage_but_ok):
+    if enable_logging:
+        print(garbage_but_ok)
+        with open(f"logs-{time.strftime('%d-%m-%y')}.txt", "a") as file:
+            to_write = re.sub(r'\033\[(\d|;)+?m', '', garbage_but_ok)
+            file.write(f"[{time.strftime('%d/%m/%y %H:%M')}] " + to_write + "\n")
+            file.flush()
+
 def scrape(type):
     system("cls")
     if clear_previous_results:
         with open(f'output-{type}.txt', 'a') as file:
             file.truncate(0)
-            print(Fore.LIGHTRED_EX + "[!] " + Fore.WHITE + f"output-{type}.txt has been cleared!")
+            log_print(Fore.LIGHTRED_EX + "[!] " + Fore.WHITE + f"output-{type}.txt has been cleared!")
             time.sleep(1)
     
-    print(Fore.LIGHTRED_EX + "[!] " + Fore.WHITE + f"Started scrape for {type} proxy:")
+    log_print(Fore.LIGHTRED_EX + "[!] " + Fore.WHITE + f"Started scrape for {type} proxy:")
     with open(f'output-{type}.txt', 'a') as file:
         collected_proxies = []
         idx = 1
@@ -91,7 +98,7 @@ def scrape(type):
         for key, url in enumerate(proxy_sources[type]):
             if idx >= proxy_limit:
                 break
-            print(Fore.LIGHTGREEN_EX + f"Scraping from target ({key+1}/{total_sources})")
+            log_print(Fore.LIGHTGREEN_EX + f"Scraping from target ({key+1}/{total_sources})")
             time.sleep(1)
             response = requests.get(url)
             if response.status_code >= 200 and response.status_code < 300:
@@ -107,7 +114,7 @@ def scrape(type):
             old_length = len(collected_proxies)
             collected_proxies = list(dict.fromkeys(collected_proxies))
             duplicates = old_length-len(collected_proxies)
-            print(Fore.LIGHTRED_EX + f"Removed {duplicates} duplicates")
+            log_print(Fore.LIGHTRED_EX + "[!] " + Fore.WHITE + f"Removed {duplicates} duplicates")
             global total_duplicates
             total_duplicates += duplicates
 
@@ -121,14 +128,15 @@ def scrape(type):
         file.flush() # Flush the file buffer to ensure immediate write (thanks chatgpt)
         global total_scrapped
         total_scrapped += idx
-        print(f"Scraped {idx} {type} proxies! \nSaved to output-{type}.txt!")
-        time.sleep(2)
+        log_print(Fore.LIGHTRED_EX + "[!] " + Fore.WHITE + f"{idx}x {type} proxies have been scraped!")
+        log_print(Fore.LIGHTRED_EX + "[!] " + Fore.WHITE + f"Scraped proxies were saved to output-{type}.txt!")
+        time.sleep(4)
         return handle_main()
     
 def checker(type):
     global get_response_from, response_timeout
     system("cls")
-    print(Fore.LIGHTRED_EX + "[!] " + Fore.WHITE + f"Starting proxy check on output-{type}.txt:")
+    log_print(Fore.LIGHTRED_EX + "[!] " + Fore.WHITE + f"Starting proxy check on output-{type}.txt:")
     collected_proxies = []
     good_proxies = []
     bad_proxies = []
@@ -142,14 +150,14 @@ def checker(type):
                 end_time = time.time()
                 response_time = math.floor((end_time - start_time) * 1000)
                 if response.status_code == 200:
-                    print(Fore.LIGHTGREEN_EX + f"{proxy} - Good! [{response_time}ms] ({key+1}/{total_proxies})")
+                    log_print(Fore.LIGHTGREEN_EX + f"{proxy} - Good! [{response_time}ms] ({key+1}/{total_proxies})")
                     good_proxies.insert(key, proxy)
                 else:
-                    print(Fore.LIGHTRED_EX + f"{proxy} - Bad! [{response_time}ms] ({key+1}/{total_proxies})")
+                    log_print(Fore.LIGHTRED_EX + f"{proxy} - Bad! [{response_time}ms] ({key+1}/{total_proxies})")
                     bad_proxies.insert(key, proxy)
                 
     except requests.exceptions.RequestException:
-        print(Fore.RED + f"{proxy} - Bad (ERROR)! ({key})")
+        log_print(Fore.RED + f"{proxy} - Bad (ERROR)! ({key})")
         bad_proxies.insert(key, proxy)
 
     if len(good_proxies) >= 1:
@@ -170,10 +178,11 @@ def checker(type):
     return handle_main()
 
 def display_info():
-    print(Fore.YELLOW + "███████████████████████████████████████████")
-    print(Fore.YELLOW + "█─▄▄▄▄█─▄▄▄─█▄─▄▄▀██▀▄─██▄─▄▄─█▄─▄▄─█▄─▄▄▀█")
-    print(Fore.YELLOW + "█▄▄▄▄─█─███▀██─▄─▄██─▀─███─▄▄▄██─▄█▀██─▄─▄█")
-    print(Fore.YELLOW + "▀▄▄▄▄▄▀▄▄▄▄▄▀▄▄▀▄▄▀▄▄▀▄▄▀▄▄▄▀▀▀▄▄▄▄▄▀▄▄▀▄▄▀")
+    
+    print(Fore.YELLOW + "██████████████████████████████████████████████████████")
+    print(Fore.YELLOW + "█▄─▄▄─█▄─▄▄▀█─▄▄─█▄─▀─▄█▄─█─▄███─▄─▄─█─▄▄─█─▄▄─█▄─▄███")
+    print(Fore.YELLOW + "██─▄▄▄██─▄─▄█─██─██▀─▀███▄─▄██████─███─██─█─██─██─██▀█")
+    print(Fore.YELLOW + "▀▄▄▄▀▀▀▄▄▀▄▄▀▄▄▄▄▀▄▄█▄▄▀▀▄▄▄▀▀▀▀▀▄▄▄▀▀▄▄▄▄▀▄▄▄▄▀▄▄▄▄▄▀")
     print(Fore.WHITE + "All proxies are taken from public sources available on the internet.")
     print(Fore.LIGHTBLUE_EX + "Made by Nertigel\ngithub.com/nertigel")
 
@@ -203,6 +212,7 @@ def display_settings():
     system("cls")
     display_info()
 
+    print(Fore.LIGHTRED_EX + "[0] " + Fore.WHITE + "Enable logging: " + str(enable_logging))
     print(Fore.LIGHTRED_EX + "[-] " + Fore.WHITE + "Scrape settings")
     print(Fore.LIGHTRED_EX + "[1] " + Fore.WHITE + "Remove duplicate ips: " + str(remove_duplicates))
     print(Fore.LIGHTRED_EX + "[2] " + Fore.WHITE + "Shuffle list output: " + str(shuffle_output))
@@ -244,7 +254,10 @@ def handle_main(skip=None):
 def handle_settings():
     display_settings()
     setting_option = int(input())
-    if setting_option == 1:
+    if setting_option == 0:
+        global enable_logging
+        enable_logging = not enable_logging
+    elif setting_option == 1:
         global remove_duplicates
         remove_duplicates = not remove_duplicates
     elif setting_option == 2:

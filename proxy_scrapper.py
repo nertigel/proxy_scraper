@@ -1,10 +1,12 @@
 from asyncio.windows_events import NULL
-from os import system
+from gc import collect
+from os import dup, system
 from time import sleep
 from colorama import Fore, Back, Style
 import requests, random
 
 total_scrapped = 0
+total_duplicates = 0
 proxy_limit = 100000
 remove_duplicates = True
 shuffle_output = False
@@ -13,7 +15,6 @@ clear_previous_results = True
 proxy_sources = {
     "http": [
         "https://raw.githubusercontent.com/TheSpeedX/PROXY-List/master/http.txt",
-        "https://raw.githubusercontent.com/jetkai/proxy-list/main/online-proxies/txt/proxies-http.txt",
         "https://raw.githubusercontent.com/MuRongPIG/Proxy-Master/main/http.txt",
         "https://raw.githubusercontent.com/prxchk/proxy-list/main/http.txt",
         "https://raw.githubusercontent.com/officialputuid/KangProxy/KangProxy/http/http.txt",
@@ -26,12 +27,13 @@ proxy_sources = {
         "https://raw.githubusercontent.com/ALIILAPRO/Proxy/main/http.txt",
         "https://raw.githubusercontent.com/yemixzy/proxy-list/main/proxies/http.txt",
         "https://raw.githubusercontent.com/sunny9577/proxy-scraper/master/generated/http_proxies.txt",
+        "https://raw.githubusercontent.com/mertguvencli/http-proxy-list/main/proxy-list/data.txt",
+        "https://raw.githubusercontent.com/zevtyardt/proxy-list/main/http.txt",
         "https://api.proxyscrape.com/?request=displayproxies&proxytype=http&country=all",
         "https://api.openproxylist.xyz/http.txt",
     ],
     "socks4": [
         "https://raw.githubusercontent.com/TheSpeedX/PROXY-List/master/socks4.txt",
-        "https://raw.githubusercontent.com/jetkai/proxy-list/main/online-proxies/txt/proxies-socks4.txt",
         "https://raw.githubusercontent.com/MuRongPIG/Proxy-Master/main/socks4.txt",
         "https://raw.githubusercontent.com/prxchk/proxy-list/main/socks4.txt",
         "https://raw.githubusercontent.com/officialputuid/KangProxy/KangProxy/socks4/socks4.txt",
@@ -43,12 +45,12 @@ proxy_sources = {
         "https://raw.githubusercontent.com/UptimerBot/proxy-list/main/proxies/socks4.txt",
         "https://raw.githubusercontent.com/ALIILAPRO/Proxy/main/socks4.txt",
         "https://raw.githubusercontent.com/sunny9577/proxy-scraper/master/generated/socks4_proxies.txt",
+        "https://raw.githubusercontent.com/zevtyardt/proxy-list/main/socks4.txt",
         "https://api.proxyscrape.com/?request=displayproxies&proxytype=socks4&country=all",
         "https://api.openproxylist.xyz/socks4.txt",
     ],
     "socks5": [
         "https://raw.githubusercontent.com/TheSpeedX/PROXY-List/master/socks5.txt",
-        "https://raw.githubusercontent.com/jetkai/proxy-list/main/online-proxies/txt/proxies-socks5.txt",
         "https://raw.githubusercontent.com/MuRongPIG/Proxy-Master/main/socks5.txt",
         "https://raw.githubusercontent.com/prxchk/proxy-list/main/socks5.txt",
         "https://raw.githubusercontent.com/officialputuid/KangProxy/KangProxy/socks5/socks5.txt",
@@ -61,6 +63,8 @@ proxy_sources = {
         "https://raw.githubusercontent.com/hookzof/socks5_list/master/proxy.txt",
         "https://raw.githubusercontent.com/ALIILAPRO/Proxy/main/socks5.txt",
         "https://raw.githubusercontent.com/sunny9577/proxy-scraper/master/generated/socks5_proxies.txt",
+        "https://raw.githubusercontent.com/hookzof/socks5_list/master/proxy.txt",
+        "https://raw.githubusercontent.com/zevtyardt/proxy-list/main/socks5.txt",
         "https://api.proxyscrape.com/?request=displayproxies&proxytype=socks5&country=all",
         "https://api.openproxylist.xyz/socks5.txt",
     ]
@@ -70,7 +74,7 @@ def scrape(type):
     if clear_previous_results:
         with open(f'output-{type}.txt', 'a') as file:
             file.truncate(0)
-            print(Fore.LIGHTRED_EX + f"Cleared previous results on {type} text file!")
+            print(Fore.LIGHTRED_EX + f"Cleared previous results on output-{type}.txt!")
             sleep(1)
     
     with open(f'output-{type}.txt', 'a') as file:
@@ -83,16 +87,22 @@ def scrape(type):
             print(Fore.LIGHTGREEN_EX + f"Scraping from target ({key+1}/{total_sources})")
             sleep(1)
             response = requests.get(url)
-            for key, value in enumerate(response.iter_lines()):
-                if idx >= proxy_limit:
-                    break
-                
-                collected_proxies.insert(idx, value)
-                idx += 1
+            if response.status_code >= 200 and response.status_code < 300:
+                for key, value in enumerate(response.iter_lines()):
+                    if idx >= proxy_limit:
+                        break
+                    
+                    collected_proxies.insert(idx, value)
+                    idx += 1
 
         global remove_duplicates
         if remove_duplicates:
+            old_length = len(collected_proxies)
             collected_proxies = list(dict.fromkeys(collected_proxies))
+            duplicates = old_length-len(collected_proxies)
+            print(Fore.LIGHTRED_EX + f"Removed {duplicates} duplicates")
+            global total_duplicates
+            total_duplicates += duplicates
 
         global shuffle_output
         if shuffle_output:
@@ -117,7 +127,7 @@ def display_info():
     print(Fore.LIGHTBLUE_EX + "Made by Nertigel\ngithub.com/nertigel")
 
     global total_scrapped
-    print(Fore.LIGHTGREEN_EX + f"Scraped: {total_scrapped}")
+    print(Fore.LIGHTGREEN_EX + f"Scraped: {total_scrapped} " + Fore.WHITE + "|" + Fore.RED + f" Duplicates: {total_duplicates}")
 
     print(Fore.RESET)
     return
@@ -165,7 +175,7 @@ def main(skip=None):
         else:
             return main()
     except ValueError:
-        return main()
+        return exit()
 
 def handle_settings():
     display_settings()

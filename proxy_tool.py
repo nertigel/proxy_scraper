@@ -1,9 +1,8 @@
 from asyncio.windows_events import NULL
 from gc import collect
 from os import dup, system
-from time import sleep
 from colorama import Fore, Back, Style
-import requests, random
+import time, requests, random, math
 
 system("title Proxy Scraper & Checker [HTTP/SOCKS4/SOCKS5] - github.com/nertigel/proxy_scraper")
 
@@ -82,7 +81,7 @@ def scrape(type):
         with open(f'output-{type}.txt', 'a') as file:
             file.truncate(0)
             print(Fore.LIGHTRED_EX + "[!] " + Fore.WHITE + f"output-{type}.txt has been cleared!")
-            sleep(1)
+            time.sleep(1)
     
     print(Fore.LIGHTRED_EX + "[!] " + Fore.WHITE + f"Started scrape for {type} proxy:")
     with open(f'output-{type}.txt', 'a') as file:
@@ -93,7 +92,7 @@ def scrape(type):
             if idx >= proxy_limit:
                 break
             print(Fore.LIGHTGREEN_EX + f"Scraping from target ({key+1}/{total_sources})")
-            sleep(1)
+            time.sleep(1)
             response = requests.get(url)
             if response.status_code >= 200 and response.status_code < 300:
                 for key, value in enumerate(response.iter_lines()):
@@ -123,7 +122,7 @@ def scrape(type):
         global total_scrapped
         total_scrapped += idx
         print(f"Scraped {idx} {type} proxies! \nSaved to output-{type}.txt!")
-        sleep(2)
+        time.sleep(2)
         return handle_main()
     
 def checker(type):
@@ -138,16 +137,19 @@ def checker(type):
             collected_proxies = file.read().splitlines()
             total_proxies = len(collected_proxies)+1
             for key, proxy in enumerate(collected_proxies):
+                start_time = time.time()
                 response = requests.get(get_response_from, proxies={type: proxy}, timeout=response_timeout, headers = {'User-Agent': 'Mozilla/5.0'})
+                end_time = time.time()
+                response_time = math.floor((end_time - start_time) * 1000)
                 if response.status_code == 200:
-                    print(Fore.LIGHTGREEN_EX + f"{proxy} - Good! ({key+1}/{total_proxies})")
+                    print(Fore.LIGHTGREEN_EX + f"{proxy} - Good! [{response_time}ms] ({key+1}/{total_proxies})")
                     good_proxies.insert(key, proxy)
                 else:
-                    print(Fore.LIGHTRED_EX + f"{proxy} - Bad! ({key+1}/{total_proxies})")
+                    print(Fore.LIGHTRED_EX + f"{proxy} - Bad! [{response_time}ms] ({key+1}/{total_proxies})")
                     bad_proxies.insert(key, proxy)
                 
     except requests.exceptions.RequestException:
-        print(Fore.RED + f"{proxy} - Bad (ERROR)! ({key+1}/{total_proxies})")
+        print(Fore.RED + f"{proxy} - Bad (ERROR)! ({key})")
         bad_proxies.insert(key, proxy)
 
     if len(good_proxies) >= 1:
@@ -164,7 +166,7 @@ def checker(type):
 
             file.flush()
     
-    sleep(2)
+    time.sleep(4)
     return handle_main()
 
 def display_info():
@@ -209,7 +211,7 @@ def display_settings():
     print(Fore.LIGHTRED_EX + "[-] " + Fore.WHITE + "Checker settings")
     print(Fore.LIGHTRED_EX + "[5] " + Fore.WHITE + "Get response from: " + str(get_response_from))
     print(Fore.LIGHTRED_EX + "[6] " + Fore.WHITE + "Timeout: " + str(response_timeout))
-    print(Fore.LIGHTRED_EX + "[5] " + Fore.WHITE + "Back")
+    print(Fore.LIGHTRED_EX + "[7] " + Fore.WHITE + "Back")
 
     return
 
@@ -274,7 +276,7 @@ def update_proxy_limit():
 def update_response_url():
     try:
         print(Fore.LIGHTRED_EX + "Enter a url to get response from (example: https://www.google.com):")
-        setting = int(input())
+        setting = str(input())
         global get_response_from
         get_response_from = setting
     except ValueError:

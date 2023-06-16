@@ -26,9 +26,10 @@ There might be better versions out there, but this is my try at it. Use it if yo
 
 ![image](scraper.png)
 
-### scrape result(11/06/2023):
-* http: 108421 (duplicates: 67009)
-* socks4: 60139 (duplicates: 44904)
-* socks5: 57096 (duplicates: 41898)
+### scrape result(16/06/2023):
+
+* http: 110105 (duplicates: 65367)
+* socks4: 63392 (duplicates: 45160)
+* socks5: 66560 (duplicates: 47697)
 
 ###### moved from https://github.com/nertigel/py/blob/main/proxy_scrapper.py

@@ -1,5 +1,5 @@
 from os import system
-from colorama import Fore, Back, Style
+from colorama import Fore
 import time, requests, random, math, re
 
 system("title Proxy Scraper and Checker [HTTP/SOCKS4/SOCKS5] - github.com/nertigel/proxy_tool")
@@ -79,103 +79,127 @@ proxy_sources = {
         "https://www.proxyscan.io/download?type=socks5",
     ]
 }
+import array
+
+colors = [
+    Fore.WHITE,
+    Fore.LIGHTRED_EX,
+    Fore.LIGHTGREEN_EX,
+    Fore.RED,
+    Fore.YELLOW,
+    Fore.LIGHTBLUE_EX,
+    Fore.RESET
+]
 
 def log_print(garbage_but_ok):
     if enable_logging:
         with open(f"logs-{time.strftime('%d-%m-%y')}.txt", "a") as file:
-            to_write = re.sub(r'\033\[(\d|;)+?m', '', garbage_but_ok)
+            to_write = re.sub(r"\033\[(\d|;)+?m", "", garbage_but_ok)
             file.write(f"[{time.strftime('%d/%m/%y %H:%M')}] " + to_write + "\n")
             file.flush()
     
     return print(garbage_but_ok)
 
 def scrape(type):
+    global remove_duplicates, total_duplicates, shuffle_output, total_scrapped
     system("cls")
     if clear_previous_results:
-        with open(f'output-{type}.txt', 'a') as file:
+        with open(f"output-{type}.txt", "a") as file:
             file.truncate(0)
-            log_print(Fore.LIGHTRED_EX + "[!] " + Fore.WHITE + f"output-{type}.txt has been cleared!")
+            log_print(colors[1] + "[!] " + colors[0] + f"output-{type}.txt has been cleared")
             time.sleep(1)
     
-    log_print(Fore.LIGHTRED_EX + "[!] " + Fore.WHITE + f"Started scrape for {type} proxies:")
-    with open(f'output-{type}.txt', 'a') as file:
-        collected_proxies = []
-        idx = 1
-        total_sources = len(proxy_sources[type])
-        for key, url in enumerate(proxy_sources[type]):
-            if idx >= proxy_limit:
-                break
-            log_print(Fore.LIGHTGREEN_EX + f"Scraping from target ({key+1}/{total_sources})")
-            time.sleep(1)
-            response = requests.get(url)
-            if response.status_code >= 200 and response.status_code < 300:
-                for key, value in enumerate(response.iter_lines()):
-                    if idx >= proxy_limit:
-                        break
-                    
-                    collected_proxies.insert(idx, value)
-                    idx += 1
+    collected_proxies = []
+    try:
+        print(colors[1] + "[!] " + colors[0] + f"Press CTRL+C to stop action")
+        log_print(colors[1] + "[!] " + colors[0] + f"Started scrape for {type} proxies:")
+        with open(f"output-{type}.txt", "a") as file:
+            idx = 1
+            total_sources = len(proxy_sources[type])
+            for key, url in enumerate(proxy_sources[type]):
+                if idx >= proxy_limit:
+                    break
+                log_print(colors[2] + f"Scraping from target ({key+1}/{total_sources})")
+                time.sleep(1)
+                response = requests.get(url)
+                if response.status_code >= 200 and response.status_code < 300:
+                    for key, value in enumerate(response.iter_lines()):
+                        if idx >= proxy_limit:
+                            break
+                        
+                        collected_proxies.insert(idx, value)
+                        idx += 1
 
-        global remove_duplicates
-        if remove_duplicates:
-            old_length = len(collected_proxies)
-            collected_proxies = list(dict.fromkeys(collected_proxies))
-            duplicates = old_length-len(collected_proxies)
-            log_print(Fore.LIGHTRED_EX + "[!] " + Fore.WHITE + f"Removed {duplicates} duplicates")
-            global total_duplicates
-            total_duplicates += duplicates
+            if remove_duplicates:
+                old_length = len(collected_proxies)
+                collected_proxies = list(dict.fromkeys(collected_proxies))
+                duplicates = old_length-len(collected_proxies)
+                log_print(colors[1] + "[!] " + colors[0] + f"Removed {duplicates} duplicates")
+                total_duplicates += duplicates
 
-        global shuffle_output
-        if shuffle_output:
-            random.shuffle(collected_proxies)
+            if shuffle_output:
+                random.shuffle(collected_proxies)
+            
+            for key, value in enumerate(collected_proxies):
+                file.write(value.decode() + "\n")
+
+            file.flush() # Flush the file buffer to ensure immediate write (thanks chatgpt)
+            total_scrapped += idx
+            log_print(colors[1] + "[!] " + colors[0] + f"{idx}x {type} proxies have been scraped")
+            log_print(colors[1] + "[!] " + colors[0] + f"Scraped proxies were saved to output-{type}.txt")
+            time.sleep(4)
+            return handle_main()
+    except KeyboardInterrupt:
+        collected_proxies_len = len(collected_proxies)
+        if collected_proxies_len > 0:
+            with open(f"output-{type}.txt", "a") as file:
+                for key, value in enumerate(collected_proxies):
+                    file.write(value.decode() + "\n")
+                file.flush()
+                
+        total_scrapped += collected_proxies_len
         
-        for key, value in enumerate(collected_proxies):
-            file.write(value.decode() + "\n")
-
-        file.flush() # Flush the file buffer to ensure immediate write (thanks chatgpt)
-        global total_scrapped
-        total_scrapped += idx
-        log_print(Fore.LIGHTRED_EX + "[!] " + Fore.WHITE + f"{idx}x {type} proxies have been scraped!")
-        log_print(Fore.LIGHTRED_EX + "[!] " + Fore.WHITE + f"Scraped proxies were saved to output-{type}.txt!")
-        time.sleep(4)
         return handle_main()
     
 def checker(type):
     global get_response_from, response_timeout
     system("cls")
-    log_print(Fore.LIGHTRED_EX + "[!] " + Fore.WHITE + f"Starting proxy check on output-{type}.txt:")
+    print(colors[1] + "[!] " + colors[0] + f"Press CTRL+C to stop action")
+    log_print(colors[1] + "[!] " + colors[0] + f"Starting proxy check on output-{type}.txt:")
     collected_proxies = []
     good_proxies = []
     bad_proxies = []
     try:
-        with open(f'output-{type}.txt', 'r') as file:
+        with open(f"output-{type}.txt", "r") as file:
             collected_proxies = file.read().splitlines()
             total_proxies = len(collected_proxies)+1
             for key, proxy in enumerate(collected_proxies):
                 start_time = time.time()
-                response = requests.get(get_response_from, proxies={type: proxy}, timeout=response_timeout, headers = {'User-Agent': 'Mozilla/5.0'})
+                response = requests.get(get_response_from, proxies={type: proxy}, timeout=response_timeout, headers = {"User-Agent": "Mozilla/5.0"})
                 end_time = time.time()
                 response_time = math.floor((end_time - start_time) * 1000)
                 if response.status_code == 200:
-                    log_print(Fore.LIGHTGREEN_EX + f"{proxy} - Good! [{response_time}ms] ({key+1}/{total_proxies})")
+                    log_print(colors[2] + f"{proxy} - Good! [{response_time}ms] ({key+1}/{total_proxies})")
                     good_proxies.insert(key, proxy)
                 else:
-                    log_print(Fore.LIGHTRED_EX + f"{proxy} - Bad! [{response_time}ms] ({key+1}/{total_proxies})")
+                    log_print(colors[1] + f"{proxy} - Bad! [{response_time}ms] ({key+1}/{total_proxies})")
                     bad_proxies.insert(key, proxy)
                 
     except requests.exceptions.RequestException:
-        log_print(Fore.RED + f"{proxy} - Bad (ERROR)! ({key})")
+        log_print(colors[3] + f"{proxy} - Bad (ERROR)! ({key})")
         bad_proxies.insert(key, proxy)
+    except KeyboardInterrupt:
+        return handle_main()
 
     if len(good_proxies) >= 1:
-        with open(f'output-{type}-good.txt', 'a') as file:
+        with open(f"output-{type}-good.txt", "a") as file:
             for key, value in enumerate(good_proxies):
                 file.write(value + "\n")
 
             file.flush()
         
     if len(bad_proxies) >= 1:
-        with open(f'output-{type}-bad.txt', 'a') as file:
+        with open(f"output-{type}-bad.txt", "a") as file:
             for key, value in enumerate(bad_proxies):
                 file.write(value + "\n")
 
@@ -185,33 +209,32 @@ def checker(type):
     return handle_main()
 
 def display_info():
-    
-    print(Fore.YELLOW + "██████████████████████████████████████████████████████")
-    print(Fore.YELLOW + "█▄─▄▄─█▄─▄▄▀█─▄▄─█▄─▀─▄█▄─█─▄███─▄─▄─█─▄▄─█─▄▄─█▄─▄███")
-    print(Fore.YELLOW + "██─▄▄▄██─▄─▄█─██─██▀─▀███▄─▄██████─███─██─█─██─██─██▀█")
-    print(Fore.YELLOW + "▀▄▄▄▀▀▀▄▄▀▄▄▀▄▄▄▄▀▄▄█▄▄▀▀▄▄▄▀▀▀▀▀▄▄▄▀▀▄▄▄▄▀▄▄▄▄▀▄▄▄▄▄▀")
-    print(Fore.WHITE + "All proxies are taken from public sources available on the internet.")
-    print(Fore.LIGHTBLUE_EX + "Made by Nertigel\ngithub.com/nertigel")
-
     global total_scrapped
-    print(Fore.LIGHTGREEN_EX + f"Scraped: {total_scrapped} " + Fore.WHITE + "|" + Fore.RED + f" Duplicates: {total_duplicates}")
+    print(colors[4] + "██████████████████████████████████████████████████████")
+    print(colors[4] + "█▄─▄▄─█▄─▄▄▀█─▄▄─█▄─▀─▄█▄─█─▄███─▄─▄─█─▄▄─█─▄▄─█▄─▄███")
+    print(colors[4] + "██─▄▄▄██─▄─▄█─██─██▀─▀███▄─▄██████─███─██─█─██─██─██▀█")
+    print(colors[4] + "▀▄▄▄▀▀▀▄▄▀▄▄▀▄▄▄▄▀▄▄█▄▄▀▀▄▄▄▀▀▀▀▀▄▄▄▀▀▄▄▄▄▀▄▄▄▄▀▄▄▄▄▄▀")
+    print(colors[0] + "All proxies are taken from public sources available on the internet.")
+    print(colors[5] + "Made by Nertigel\ngithub.com/nertigel")
 
-    print(Fore.RESET)
+    print(colors[2] + f"Scraped: {total_scrapped} " + colors[0] + "|" + colors[3] + f" Duplicates: {total_duplicates}")
+
+    print(colors[6])
     return
 
 def display_options():
     system("cls")
     display_info()
 
-    print(Fore.LIGHTRED_EX + "[-] " + Fore.WHITE + "Please enter your choice:")
-    print(Fore.LIGHTRED_EX + "[1] " + Fore.WHITE + "Scrape HTTP")
-    print(Fore.LIGHTRED_EX + "[2] " + Fore.WHITE + "Scrape SOCKS4")
-    print(Fore.LIGHTRED_EX + "[3] " + Fore.WHITE + "Scrape SOCKS5")
-    print(Fore.LIGHTRED_EX + "[4] " + Fore.WHITE + "Check HTTP")
-    print(Fore.LIGHTRED_EX + "[5] " + Fore.WHITE + "Check SOCKS4")
-    print(Fore.LIGHTRED_EX + "[6] " + Fore.WHITE + "Check SOCKS5")
-    print(Fore.LIGHTRED_EX + "[7] " + Fore.WHITE + "Settings")
-    print(Fore.LIGHTRED_EX + "[8] " + Fore.WHITE + "Exit")
+    print(colors[1] + "[-] " + colors[0] + "Please enter your choice:")
+    print(colors[1] + "[1] " + colors[0] + "Scrape HTTP")
+    print(colors[1] + "[2] " + colors[0] + "Scrape SOCKS4")
+    print(colors[1] + "[3] " + colors[0] + "Scrape SOCKS5")
+    print(colors[1] + "[4] " + colors[0] + "Check HTTP")
+    print(colors[1] + "[5] " + colors[0] + "Check SOCKS4")
+    print(colors[1] + "[6] " + colors[0] + "Check SOCKS5")
+    print(colors[1] + "[7] " + colors[0] + "Settings")
+    print(colors[1] + "[8] " + colors[0] + "Exit")
 
     return
 
@@ -219,16 +242,16 @@ def display_settings():
     system("cls")
     display_info()
 
-    print(Fore.LIGHTRED_EX + "[0] " + Fore.WHITE + "Enable logging: " + str(enable_logging))
-    print(Fore.LIGHTRED_EX + "[-] " + Fore.WHITE + "Scrape settings")
-    print(Fore.LIGHTRED_EX + "[1] " + Fore.WHITE + "Remove duplicate ips: " + str(remove_duplicates))
-    print(Fore.LIGHTRED_EX + "[2] " + Fore.WHITE + "Shuffle list output: " + str(shuffle_output))
-    print(Fore.LIGHTRED_EX + "[3] " + Fore.WHITE + "Clear previous results from files: " + str(clear_previous_results))
-    print(Fore.LIGHTRED_EX + "[4] " + Fore.WHITE + "Limit proxies: " + str(proxy_limit))
-    print(Fore.LIGHTRED_EX + "[-] " + Fore.WHITE + "Checker settings")
-    print(Fore.LIGHTRED_EX + "[5] " + Fore.WHITE + "Get response from: " + str(get_response_from))
-    print(Fore.LIGHTRED_EX + "[6] " + Fore.WHITE + "Timeout: " + str(response_timeout))
-    print(Fore.LIGHTRED_EX + "[7] " + Fore.WHITE + "Back")
+    print(colors[1] + "[0] " + colors[0] + "Enable logging: " + str(enable_logging))
+    print(colors[1] + "[-] " + colors[0] + "Scrape settings")
+    print(colors[1] + "[1] " + colors[0] + "Remove duplicate ips: " + str(remove_duplicates))
+    print(colors[1] + "[2] " + colors[0] + "Shuffle list output: " + str(shuffle_output))
+    print(colors[1] + "[3] " + colors[0] + "Clear previous results from files: " + str(clear_previous_results))
+    print(colors[1] + "[4] " + colors[0] + "Limit proxies: " + str(proxy_limit))
+    print(colors[1] + "[-] " + colors[0] + "Checker settings")
+    print(colors[1] + "[5] " + colors[0] + "Get response from: " + str(get_response_from))
+    print(colors[1] + "[6] " + colors[0] + "Timeout: " + str(response_timeout))
+    print(colors[1] + "[7] " + colors[0] + "Back")
 
     return
 
@@ -238,17 +261,17 @@ def handle_main(skip=None):
 
         option = skip or int(input())
         if option == 1:
-            return scrape('http')
+            return scrape("http")
         elif option == 2:
-            return scrape('socks4')
+            return scrape("socks4")
         elif option == 3:
-            return scrape('socks5')
+            return scrape("socks5")
         elif option == 4:
-            return checker('http')
+            return checker("http")
         elif option == 5:
-            return checker('socks4')
+            return checker("socks4")
         elif option == 6:
-            return checker('socks5')
+            return checker("socks5")
         elif option == 7:
             return handle_settings()
         elif option == 8:
@@ -259,19 +282,16 @@ def handle_main(skip=None):
         return exit()
 
 def handle_settings():
+    global enable_logging, remove_duplicates, shuffle_output, clear_previous_results
     display_settings()
     setting_option = int(input())
     if setting_option == 0:
-        global enable_logging
         enable_logging = not enable_logging
     elif setting_option == 1:
-        global remove_duplicates
         remove_duplicates = not remove_duplicates
     elif setting_option == 2:
-        global shuffle_output
         shuffle_output = not shuffle_output
     elif setting_option == 3:
-        global clear_previous_results
         clear_previous_results = not clear_previous_results
     elif setting_option == 4:
         update_proxy_limit()
@@ -286,27 +306,27 @@ def handle_settings():
 
 def update_proxy_limit():
     try:
-        print(Fore.LIGHTRED_EX + "Enter an amount for proxy scrape limit (int):")
-        setting = int(input())
         global proxy_limit
+        print(colors[1] + "Enter an amount for proxy scrape limit (int):")
+        setting = int(input())
         proxy_limit = setting
     except ValueError:
         handle_main(7)
 
 def update_response_url():
     try:
-        print(Fore.LIGHTRED_EX + "Enter a url to get response from (example: https://www.google.com):")
-        setting = str(input())
         global get_response_from
+        print(colors[1] + "Enter a url to get response from (default: https://www.google.com):")
+        setting = str(input())
         get_response_from = setting
     except ValueError:
         handle_main(7)
 
 def update_response_timeout():
     try:
-        print(Fore.LIGHTRED_EX + "Enter a url to get response from (example: https://www.google.com):")
-        setting = int(input())
         global response_timeout
+        print(colors[1] + "Enter an amount for response timeout (default: 10):")
+        setting = int(input())
         response_timeout = setting
     except ValueError:
         handle_main(7)

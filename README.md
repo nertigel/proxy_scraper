@@ -16,9 +16,9 @@ There might be better versions out there, but this is my try at it. Use it if yo
 8. Exit
 ### Settings menu:
 0. Enable logging
-1. Remove duplicate ips
-2. Shuffle list output
-3. Clear previous results from files
+1. Clear previous results from files
+2. Remove duplicate ips
+3. Shuffle list output
 4. Limit proxies
 5. Get response from
 6. Timeout
